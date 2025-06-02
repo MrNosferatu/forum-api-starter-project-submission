@@ -23,25 +23,19 @@ jobs:
             # --- 1. Load NVM and set up PATH for Node.js tools ---
             echo "--- Attempting to load NVM ---"
             export NVM_DIR="$HOME/.nvm"
-            # Explicitly source nvm.sh to load NVM functions
             if [ -s "$NVM_DIR/nvm.sh" ]; then
               echo "Sourcing NVM script from $NVM_DIR/nvm.sh"
               . "$NVM_DIR/nvm.sh"
             else
               echo "ERROR: NVM script not found at $NVM_DIR/nvm.sh"
-              exit 1 # Exit if NVM script is not found, as subsequent commands will fail
+              exit 1
             fi
             
-            # (Optional) Source NVM bash completion as well
             if [ -s "$NVM_DIR/bash_completion" ]; then
               echo "Sourcing NVM bash completion."
               . "$NVM_DIR/bash_completion"
             fi
 
-            # Now that NVM is loaded, explicitly tell it to use a Node.js version
-            # Use --lts to pick the latest Long Term Support version
-            # || nvm use default: Fallback to the 'default' alias if --lts isn't found
-            # || true: Prevents the script from exiting if nvm use itself fails (though it shouldn't if nvm is loaded)
             echo "Activating Node.js version using NVM..."
             nvm use --lts || nvm use default || true 
 
@@ -57,13 +51,10 @@ jobs:
             echo "--- End Post-NVM Debugging ---"
 
             # --- 2. Define Project Directory and Repository URL ---
-            # IMPORTANT: Confirm this path matches where your project is on WSL
             PROJECT_DIR="$HOME/forum-api-starter-project-submission" 
-            # IMPORTANT: Replace with the actual SSH clone URL of YOUR GitHub repository
-            REPO_URL="git@github.com:MrNosferatu/forum-api-starter-project-submission.git" # Example URL, verify for your repo
+            REPO_URL="git@github.com:MrNosferatu/forum-api-starter-project-submission.git" # Verify this URL
 
             # --- 3. Handle Git Repository Setup (Clone or Pull) ---
-            # This logic ensures the repo is cloned if it's not already there
             echo "Checking project directory: $PROJECT_DIR"
             if [ ! -d "$PROJECT_DIR" ]; then
               echo "Project directory does not exist. Creating and cloning..."
@@ -80,9 +71,8 @@ jobs:
             echo "Navigating to project directory: $PROJECT_DIR"
             cd "$PROJECT_DIR" || { echo "ERROR: Failed to change directory to $PROJECT_DIR"; exit 1; }
             
-            # (Optional debugging) List contents after changing directory
             echo "Contents of $PROJECT_DIR:"
-            ls -la
+            ls -la # This should now show 'src' directory
 
             # --- 5. Pull Latest Changes ---
             echo "Pulling latest changes from Git..."
@@ -97,8 +87,8 @@ jobs:
 
             # --- 7. Restart Application with PM2 ---
             echo "Restarting application with PM2..."
-            # Adjust 'auth-api' if your PM2 process has a different name
-            # Adjust 'src/index.js' if your app's main entry file is different
-            pm2 restart auth-api || pm2 start index.js --name auth-api || { echo "ERROR: PM2 command failed!"; exit 1; }
+            # FIXED: Changed 'index.js' to 'src/app.js' based on package.json "start" script
+            pm2 restart auth-api || pm2 start src/app.js --name auth-api || { echo "ERROR: PM2 command failed!"; exit 1; }
+
             echo "Deployment complete!"
             set +x # Disable command tracing
