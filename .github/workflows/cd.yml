@@ -99,7 +99,6 @@ jobs:
             echo "Restarting application with PM2..."
             # Adjust 'auth-api' if your PM2 process has a different name
             # Adjust 'src/index.js' if your app's main entry file is different
-            pm2 restart auth-api || pm2 start src/index.js --name auth-api || { echo "ERROR: PM2 command failed!"; exit 1; }
-
+            pm2 restart auth-api || pm2 start index.js --name auth-api || { echo "ERROR: PM2 command failed!"; exit 1; }
             echo "Deployment complete!"
             set +x # Disable command tracing
