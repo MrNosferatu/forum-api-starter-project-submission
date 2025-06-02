@@ -1,25 +1,105 @@
-    name: Continuous Deployment
-     
-    on: 
-      push:
-        branches:
-          - main
-     
-    jobs:
-      deploy:
-        runs-on: ubuntu-latest
-     
-        steps:
-        - name: SSH and deploy app
-          uses: appleboy/ssh-action@v1
-          with:
-            host: ${{ secrets.SSH_HOST }}
-            username: ${{ secrets.SSH_USERNAME }}
-            key: ${{ secrets.SSH_KEY }}
-            port: ${{ secrets.SSH_PORT }}
-            script: |
-              cd ~/forum-api-starter-project-submission
-              git pull origin main
-              npm install
-              npm run migrate up
-              pm2 restart auth-api
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and deploy app
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -x # Enable command tracing - this is extremely helpful for debugging!
+
+            # --- 1. Load NVM and set up PATH for Node.js tools ---
+            echo "--- Attempting to load NVM ---"
+            export NVM_DIR="$HOME/.nvm"
+            # Explicitly source nvm.sh to load NVM functions
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              echo "Sourcing NVM script from $NVM_DIR/nvm.sh"
+              . "$NVM_DIR/nvm.sh"
+            else
+              echo "ERROR: NVM script not found at $NVM_DIR/nvm.sh"
+              exit 1 # Exit if NVM script is not found, as subsequent commands will fail
+            fi
+            
+            # (Optional) Source NVM bash completion as well
+            if [ -s "$NVM_DIR/bash_completion" ]; then
+              echo "Sourcing NVM bash completion."
+              . "$NVM_DIR/bash_completion"
+            fi
+
+            # Now that NVM is loaded, explicitly tell it to use a Node.js version
+            # Use --lts to pick the latest Long Term Support version
+            # || nvm use default: Fallback to the 'default' alias if --lts isn't found
+            # || true: Prevents the script from exiting if nvm use itself fails (though it shouldn't if nvm is loaded)
+            echo "Activating Node.js version using NVM..."
+            nvm use --lts || nvm use default || true 
+
+            # --- Debugging (KEEP THESE FOR THIS RUN!) ---
+            echo "--- Post-NVM Loading Debugging ---"
+            echo "PATH after NVM: $PATH"
+            which node || echo "Node executable not found in PATH"
+            which npm || echo "NPM executable not found in PATH"
+            which pm2 || echo "PM2 executable not found in PATH"
+            echo "Node version: $(node -v || echo 'Not installed or not found')"
+            echo "NPM version: $(npm -v || echo 'Not installed or not found')"
+            echo "PM2 version: $(pm2 -v || echo 'Not installed or not found')"
+            echo "--- End Post-NVM Debugging ---"
+
+            # --- 2. Define Project Directory and Repository URL ---
+            # IMPORTANT: Confirm this path matches where your project is on WSL
+            PROJECT_DIR="$HOME/forum-api-starter-project-submission" 
+            # IMPORTANT: Replace with the actual SSH clone URL of YOUR GitHub repository
+            REPO_URL="git@github.com:MrNosferatu/forum-api-starter-project-submission.git" # Example URL, verify for your repo
+
+            # --- 3. Handle Git Repository Setup (Clone or Pull) ---
+            # This logic ensures the repo is cloned if it's not already there
+            echo "Checking project directory: $PROJECT_DIR"
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Project directory does not exist. Creating and cloning..."
+              mkdir -p "$PROJECT_DIR"
+              git clone "$REPO_URL" "$PROJECT_DIR" || { echo "ERROR: Git clone failed!"; exit 1; }
+            elif [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "Directory exists but is not a Git repository. Cloning into it..."
+              git clone "$REPO_URL" "$PROJECT_DIR" || { echo "ERROR: Git clone failed!"; exit 1; }
+            else
+              echo "Project directory exists and is a Git repository. Proceeding with pull."
+            fi
+
+            # --- 4. Navigate to Project Directory ---
+            echo "Navigating to project directory: $PROJECT_DIR"
+            cd "$PROJECT_DIR" || { echo "ERROR: Failed to change directory to $PROJECT_DIR"; exit 1; }
+            
+            # (Optional debugging) List contents after changing directory
+            echo "Contents of $PROJECT_DIR:"
+            ls -la
+
+            # --- 5. Pull Latest Changes ---
+            echo "Pulling latest changes from Git..."
+            git pull origin main || { echo "ERROR: Git pull failed!"; exit 1; }
+
+            # --- 6. Install Dependencies and Run Migrations ---
+            echo "Installing Node.js dependencies..."
+            npm install || { echo "ERROR: npm install failed!"; exit 1; }
+
+            echo "Running database migrations..."
+            npm run migrate up || { echo "ERROR: npm run migrate up failed!"; exit 1; }
+
+            # --- 7. Restart Application with PM2 ---
+            echo "Restarting application with PM2..."
+            # Adjust 'auth-api' if your PM2 process has a different name
+            # Adjust 'src/index.js' if your app's main entry file is different
+            pm2 restart auth-api || pm2 start src/index.js --name auth-api || { echo "ERROR: PM2 command failed!"; exit 1; }
+
+            echo "Deployment complete!"
+            set +x # Disable command tracing
