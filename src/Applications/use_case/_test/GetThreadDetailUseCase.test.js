@@ -5,6 +5,7 @@ const ReplyRepository = require('../../../Domains/replies/ReplyRepository');
 const GetThread = require('../../../Domains/threads/entities/GetThread');
 const ThreadRepository = require('../../../Domains/threads/ThreadRepository');
 const GetThreadDetailUseCase = require('../GetThreadDetailUseCase');
+const LikeRepository = require('../../../Domains/likes/LikeRepository');
 
 describe('GetThreadDetailUseCase', ()=>{
     it('should orchestrating the get thread detail action correctly', async ()=>{
@@ -22,7 +23,7 @@ describe('GetThreadDetailUseCase', ()=>{
                 date: new Date('2025-04-18T00:00:00Z'),
                 username: 'budi',
                 comments: []
-            });
+            }); 
         });
 
         const mockCommentRepository = new CommentRepository();
@@ -63,7 +64,16 @@ describe('GetThreadDetailUseCase', ()=>{
             })];
         });
 
-        const getThreadDetailUseCase = new GetThreadDetailUseCase({threadRepository:mockThreadRepository, commentRepository: mockCommentRepository, replyRepository: mockReplyRepository});
+        const mockLikeRepository = new LikeRepository();
+        mockLikeRepository.getLikeCount = jest.fn().mockImplementation(() => {
+            return [{
+                comment_id: 'comment-123',
+            }, {
+                comment_id: 'comment-123',
+            }];
+        });
+
+        const getThreadDetailUseCase = new GetThreadDetailUseCase({threadRepository:mockThreadRepository, commentRepository: mockCommentRepository, replyRepository: mockReplyRepository, likeRepository: mockLikeRepository});
 
         const result = await getThreadDetailUseCase.execute(useCasePayload);
 
@@ -78,12 +88,14 @@ describe('GetThreadDetailUseCase', ()=>{
                 username: 'asep',
                 date: new Date('2025-04-18T00:00:00Z'),
                 content: '**komentar telah dihapus**',
+                likeCount: 2,
                 replies: [],
             }, {
                 id: 'comment-158',
                 username: 'ahmad',
                 date: new Date('2025-04-18T00:00:00Z'),
                 content: 'sok asik',
+                likeCount: 0,
                 replies: [{
                     id: 'reply-123',
                     username: 'asep',
