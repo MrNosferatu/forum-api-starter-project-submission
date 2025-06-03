@@ -1,4 +1,5 @@
 const AddedThread = require('../../../Domains/threads/entities/AddedThread');
+const NewThread = require('../../../Domains/threads/entities/NewThread');
 const ThreadRepository = require('../../../Domains/threads/ThreadRepository');
 const AddThreadUseCase = require('../AddThreadUseCase');
 
@@ -10,11 +11,11 @@ describe('AddThreadUseCase', ()=>{
             owner: 'user-123'
         };
 
-        const expectedAddedThread = {
+        const expectedAddedThread = new NewThread({
             title: '123',
             body: '123',
             owner: 'user-123',
-        };
+        });
 
         const mockAddedThread = new AddedThread({
             id: 'thread-123',

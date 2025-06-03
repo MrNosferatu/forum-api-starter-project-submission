@@ -1,5 +1,6 @@
 const CommentRepository = require('../../../Domains/comments/CommentRepository');
 const AddedReply = require('../../../Domains/replies/entities/AddedReply');
+const NewReply = require('../../../Domains/replies/entities/NewReply');
 const ReplyRepository = require('../../../Domains/replies/ReplyRepository');
 const ThreadRepository = require('../../../Domains/threads/ThreadRepository');
 const AddReplyUseCase = require('../AddReplyUseCase');
@@ -13,12 +14,12 @@ describe('AddReplyUseCase', ()=>{
             owner: 'user-123'
         };
 
-        const expectedAddedReply = {
+        const expectedAddedReply = new NewReply({
             thread_id: 'thread-123',
             comment_id: 'comment-123',
             content: '123',
             owner: 'user-123',
-        };
+        });
 
         const mockAddedReply = new AddedReply({
             id: 'reply-123',

@@ -29,12 +29,14 @@ describe('GetThreadDetailUseCase', ()=>{
         mockCommentRepository.getThreadComments = jest.fn().mockImplementation(()=>{
             return [new GetComment({
                 id: 'comment-123',
+                thread_id: 'thread-123',
                 content: 'ini komentar',
                 username: 'asep',
                 date: new Date('2025-04-18T00:00:00Z'),
                 is_deleted: true
             }),new GetComment({
                 id: 'comment-158',
+                thread_id: 'thread-123',
                 content: 'sok asik',
                 username: 'ahmad',
                 date: new Date('2025-04-18T00:00:00Z'),

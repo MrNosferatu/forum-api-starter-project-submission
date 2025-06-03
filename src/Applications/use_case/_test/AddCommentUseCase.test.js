@@ -1,5 +1,6 @@
 const CommentRepository = require('../../../Domains/comments/CommentRepository');
 const AddedComment = require('../../../Domains/comments/entities/AddedComment');
+const NewComment = require('../../../Domains/comments/entities/NewComment');
 const ThreadRepository = require('../../../Domains/threads/ThreadRepository');
 const AddCommentUseCase = require('../AddCommentUseCase');
 
@@ -17,11 +18,11 @@ describe('AddCommentUseCase', ()=>{
             owner: 'user-123',
         });
 
-        const expectedAddedComment = {
+        const expectedAddedComment = new NewComment({
             thread_id: 'thread-123',
             content: '123',
             owner: 'user-123',
-        };
+        });
 
         const mockCommentRepository = new CommentRepository();
         mockCommentRepository.addComment = jest.fn().mockImplementation(()=>Promise.resolve(
